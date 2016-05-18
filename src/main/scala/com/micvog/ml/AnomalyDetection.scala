@@ -18,9 +18,7 @@ class AnomalyDetection extends Serializable with Logging {
 
     val stats: MultivariateStatisticalSummary = Statistics.colStats(data)
     val mean: Vector = stats.mean
-//    val mean = Vectors.dense(Array(14.1122257839456, 14.9977105081362))
     val variances: Vector = stats.variance
-//    val variances: Vector = Vectors.dense(Array(1.83263141349452, 1.70974533082878))
     logInfo("MEAN %s VARIANCE %s".format(mean, variances))
 
     new AnomalyDetectionModel(mean, variances, default_epsilon)
@@ -68,9 +66,9 @@ class AnomalyDetection extends Serializable with Logging {
     var bestEpsilon = 0D
     var bestF1 = 0D
 
-    //starting from epsilon to
     val stepsize = (maxPval - minPval) / 1000.0
 
+    //find best F1 for different epsilons
     for (epsilon <- minPval to maxPval by stepsize){
 
       val bcepsilon = sc.broadcast(epsilon)

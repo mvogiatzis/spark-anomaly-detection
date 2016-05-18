@@ -3,7 +3,7 @@ package com.micvog.ml
 import com.holdenkarau.spark.testing.{RDDComparisons, SharedSparkContext}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
-import org.scalatest.{FlatSpec, FunSuite, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
 class AnomalyDetectionModelTest extends FlatSpec with Matchers with SharedSparkContext {
 
