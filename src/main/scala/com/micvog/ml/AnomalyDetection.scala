@@ -13,7 +13,7 @@ class AnomalyDetection extends Serializable with Logging {
 
   val default_epsilon: Double = 0.1
 
-  def run(data: RDD[Vector], crossValData: RDD[LabeledPoint]): AnomalyDetectionModel = {
+  def run(data: RDD[Vector]): AnomalyDetectionModel = {
     val sc = data.sparkContext
 
     val stats: MultivariateStatisticalSummary = Statistics.colStats(data)
@@ -22,21 +22,33 @@ class AnomalyDetection extends Serializable with Logging {
     val variances: Vector = stats.variance
 //    val variances: Vector = Vectors.dense(Array(1.83263141349452, 1.70974533082878))
     logInfo("MEAN %s VARIANCE %s".format(mean, variances))
-    val bcMean = sc.broadcast(mean)
-    val bcVar = sc.broadcast(variances)
+
+    new AnomalyDetectionModel(mean, variances, default_epsilon)
+  }
+
+  /**
+    * Uses the labeled input points to optimize the epsilon parameter by finding the best F1 Score
+    * @param crossValData
+    * @param anomalyDetectionModel
+    * @return
+    */
+  def optimize(crossValData: RDD[LabeledPoint], anomalyDetectionModel: AnomalyDetectionModel) = {
+    val sc = crossValData.sparkContext
+    val bcMean = sc.broadcast(anomalyDetectionModel.means)
+    val bcVar = sc.broadcast(anomalyDetectionModel.variances)
 
     //compute probability density function for each example in the cross validation set
-    val probsCV: RDD[Double] = crossValData.map(labeledpoint => AnomalyDetection.probFunction(labeledpoint.features, bcMean.value, bcVar.value))
+    val probsCV: RDD[Double] = crossValData.map(labeledpoint =>
+      AnomalyDetection.probFunction(labeledpoint.features, bcMean.value, bcVar.value)
+    )
 
+    //select epsilon
     crossValData.persist()
-    //given cross-val set (yval) select epsilon
-    val epsWithF1Score: (Double, Double) = evaluate(crossValData, probsCV)
+    val epsilonWithF1Score: (Double, Double) = evaluate(crossValData, probsCV)
     crossValData.unpersist()
 
-    logInfo("Best epsilon %s F1 score %s".format(epsWithF1Score._1, epsWithF1Score._2))
-
-    // based on F1 score
-    new AnomalyDetectionModel(mean, variances, default_epsilon)
+    logInfo("Best epsilon %s F1 score %s".format(epsilonWithF1Score._1, epsilonWithF1Score._2))
+    new AnomalyDetectionModel(anomalyDetectionModel.means, anomalyDetectionModel.variances, epsilonWithF1Score._1)
   }
 
   /**
@@ -113,13 +125,16 @@ class AnomalyDetection extends Serializable with Logging {
 object AnomalyDetection {
 
 
+  /**
+    * True if the given point is an anomaly, false otherwise
+    * @param point
+    * @param means
+    * @param variances
+    * @param epsilon
+    * @return
+    */
   private[ml] def predict (point: Vector, means: Vector, variances: Vector, epsilon: Double): Boolean = {
-
-    point.toArray.map { x: Double =>
-      val power = Math.pow(Math.E, -0.5 * Math.pow((x - 3.0) / 4.0, 2))
-      (1.0 / (x * Math.sqrt(2.0 * Math.PI))) * power
-    }.product < epsilon
-
+    probFunction(point, means, variances) < epsilon
   }
 
   private[ml] def probFunction(point: Vector, means: Vector, variances: Vector): Double = {

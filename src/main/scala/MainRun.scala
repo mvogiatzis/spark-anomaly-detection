@@ -7,7 +7,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
 
-object SimpleApp {
+object MainRun {
 
 
 
@@ -26,11 +26,12 @@ object SimpleApp {
     val cvVectors: RDD[LabeledPoint] = parseFeaturesWithLabel(cvData)
 
     val data = vectors.cache()
-    val dataCvVec = cvVectors.cache()
-
+    val anDet: AnomalyDetection = new AnomalyDetection()
     //derive model
-    val model = new AnomalyDetection().run(data, dataCvVec)
+    val model = anDet.run(data)
 
+    val dataCvVec = cvVectors.cache()
+    val optimalModel = anDet.optimize(dataCvVec, model)
   }
 
   def parseFeatures(rawdata: RDD[String]): RDD[Vector] = {

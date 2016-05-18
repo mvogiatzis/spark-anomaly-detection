@@ -3,10 +3,10 @@ package com.micvog.ml
 import org.apache.spark.mllib.linalg._
 import org.apache.spark.rdd.RDD
 
-class AnomalyDetectionModel  (
+class AnomalyDetectionModel (
                                val means: Vector,
                                val variances: Vector,
-                               val epsilon: Double)
+                               val epsilon: Double) extends Serializable
 {
   /**
     *
