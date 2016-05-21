@@ -12,11 +12,13 @@ class AnomalyDetectionModelTest extends FlatSpec with Matchers with SharedSparkC
 
   "predict" should "return correct results given appropriate RDD points as input" in {
 
-    val rdd: RDD[Vector] = sc.makeRDD(Seq(Array(14.8593411857427, 14.9006647394062), Array(12.14234, 20.432)))
+    val arr1 = Array(14.8593411857427, 14.9006647394062)
+    val arr2 = Array(12.14234, 20.432)
+    val rdd: RDD[Vector] = sc.makeRDD(Seq(arr1, arr2))
       .map(rdd => Vectors.dense(rdd))
 
     val rddResults = new AnomalyDetectionModel(means, variances, 0.05).predict(rdd)
-    RDDComparisons.assertRDDEqualsWithOrder(sc.makeRDD(List(false, true)), rddResults)
+    RDDComparisons.assertRDDEqualsWithOrder(sc.makeRDD(List((Vectors.dense(arr1), false), (Vectors.dense(arr2), true))), rddResults)
   }
 
 }

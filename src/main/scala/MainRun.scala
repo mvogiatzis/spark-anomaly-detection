@@ -20,16 +20,23 @@ object MainRun {
     val cvData = sc.textFile(cvFilePath, 2).cache()
 
     //convert raw data to vectors
-    val vectors: RDD[Vector] = FeaturesParser.parseFeatures(rawdata)
-    val cvVectors: RDD[LabeledPoint] = FeaturesParser.parseFeaturesWithLabel(cvData)
+    val trainingVec: RDD[Vector] = FeaturesParser.parseFeatures(rawdata)
+    val cvLabeledVec: RDD[LabeledPoint] = FeaturesParser.parseFeaturesWithLabel(cvData)
 
-    val data = vectors.cache()
+    val data = trainingVec.cache()
     val anDet: AnomalyDetection = new AnomalyDetection()
     //derive model
     val model = anDet.run(data)
 
-    val dataCvVec = cvVectors.cache()
+    val dataCvVec = cvLabeledVec.cache()
     val optimalModel = anDet.optimize(dataCvVec, model)
+
+    //find outliers in CV
+    val cvVec = cvLabeledVec.map(_.features)
+    val results = optimalModel.predict(cvVec)
+    val outliers = results.filter(_._2).collect()
+    outliers.foreach(v => println(v._1))
+    println("\nFound %s outliers\n".format(outliers.size))
   }
 
 }

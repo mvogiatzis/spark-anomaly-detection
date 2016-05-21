@@ -17,8 +17,8 @@ class AnomalyDetectionModel (
     AnomalyDetection.predict(point, means, variances, epsilon)
   }
 
-  def predict(points: RDD[Vector]): RDD[Boolean] = {
-    points.map(p => AnomalyDetection.predict(p, means, variances, epsilon))
+  def predict(points: RDD[Vector]): RDD[(Vector, Boolean)] = {
+    points.map(p => (p,AnomalyDetection.predict(p, means, variances, epsilon)))
   }
 
 }
