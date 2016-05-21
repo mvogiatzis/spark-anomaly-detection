@@ -36,7 +36,7 @@ object MainRun {
     val results = optimalModel.predict(cvVec)
     val outliers = results.filter(_._2).collect()
     outliers.foreach(v => println(v._1))
-    println("\nFound %s outliers\n".format(outliers.size))
+    println("\nFound %s outliers\n".format(outliers.length))
   }
 
 }
